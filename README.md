@@ -73,7 +73,7 @@ The main navigation provides access to:
 
 ### 📸 Screenshot
 
-![Main Dashboard](screenshots/dashboard.png)
+![Main Dashboard](Screenshots/dashboard.png)
 
 ---
 
@@ -103,7 +103,7 @@ Submitted issues are stored in the SQL Server database and assigned an initial *
 
 ### 📸 Screenshot
 
-![Report Issue](screenshots/report.png)
+![Report Issue](Screenshots/report.png)
 
 ---
 
@@ -129,7 +129,7 @@ The request status uses the following stages:
 
 ### 📸 Screenshot
 
-![Request Status](screenshots/request-status.png)
+![Request Status](Screenshots/request-status.png)
 
 ---
 
@@ -152,7 +152,7 @@ Users can select an event to view additional information.
 
 ### 📸 Screenshot
 
-![Events Page](screenshots/events.png)
+![Events Page](Screenshots/events.png)
 
 ---
 
@@ -175,7 +175,7 @@ The search results update dynamically based on the selected filters.
 
 ### 📸 Screenshot
 
-![Event Search](screenshots/event-search.png)
+![Event Search](Screenshots/event-search.png)
 
 ---
 
@@ -205,7 +205,7 @@ The highest-scoring events are presented in the **Recommended For You** section.
 
 ### 📸 Screenshot
 
-![Recommended Events](screenshots/events.png)
+![Recommended Events](Screenshots/events.png)
 
 ---
 
@@ -224,7 +224,7 @@ Only active announcements are displayed to users.
 
 ### 📸 Screenshot
 
-![Announcements](screenshots/announcements.png)
+![Announcements](Screenshots/announcements.png)
 
 ---
 
@@ -473,31 +473,31 @@ Screenshots of the completed Part 2 application are available below.
 
 ### 🏠 Main Dashboard
 
-![Main Dashboard](screenshots/dashboard.png)
+![Main Dashboard](Screenshots/dashboard.png)
 
 ### 📅 Events and Announcements
 
-![Events Page](screenshots/events.png)
+![Events Page](Screenshots/events.png)
 
 ### 🔎 Event Search and Filtering
 
-![Event Search](screenshots/event-search.png)
+![Event Search](Screenshots/event-search.png)
 
 ### ⭐ Recommended Events
 
-![Recommendations](screenshots/events.png)
+![Recommendations](Screenshots/events.png)
 
 ### 📰 Announcements
 
-![Announcements](screenshots/announcements.png)
+![Announcements](Screenshots/announcements.png)
 
 ### 📋 Request Status
 
-![Request Status](screenshots/request-status.png)
+![Request Status](Screenshots/request-status.png)
 
 ### 🚨 Report Issue
 
-![Report Issue](screenshots/report.png)
+![Report Issue](Screenshots/report.png)
 
 ---
 
