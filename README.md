@@ -1,4 +1,5 @@
 # 🏙️ Municipal Services Application - ST10535591
+## Tshwarelo Lephoto
 
 A Windows Forms desktop application designed to provide community members with access to municipal services, local events, announcements, and service request information.
 
@@ -28,7 +29,7 @@ The application uses **SQL Server LocalDB** for data storage.
 Clone the GitHub repository:
 
 ```
-git clone [INSERT YOUR PART 2 GITHUB URL]
+git clone https://github.com/CodeByRelo/MunicipalityServiceApp2.git
 ```
 
 Or download the repository as a ZIP file from GitHub and extract it.
@@ -536,7 +537,7 @@ Potential future improvements include:
 
 The complete source code for the application is available on GitHub:
 
-**Repository:** [INSERT YOUR PART 2 GITHUB URL]
+**Repository:** https://github.com/CodeByRelo/MunicipalityServiceApp2.git
 
 ---
 
