@@ -44,6 +44,8 @@ namespace MunicipalityServiceApp2
 
         private readonly RecommendationService recommendationService = new RecommendationService();
 
+        private IssueAlgorithmService issueAlgorithmService;
+
 
         // =========================================================
         // CONSTRUCTOR
@@ -54,6 +56,8 @@ namespace MunicipalityServiceApp2
             InitializeComponent();
 
             new EventSeedService().Seed();
+
+            issueAlgorithmService = new IssueAlgorithmService();
 
             SetupNavigation();
 
@@ -957,6 +961,9 @@ namespace MunicipalityServiceApp2
                         description
                     );
 
+                    // Refresh all data structures to include the new issue
+                    issueAlgorithmService.RefreshIssueStructures();
+
                     MessageBox.Show(
                         $"Issue #{issue.Id} has been submitted successfully.",
                         "Issue Submitted",
@@ -1010,14 +1017,37 @@ namespace MunicipalityServiceApp2
             subtitle.Location = new Point(34, 68);
             page.Controls.Add(subtitle);
 
+            Button btnAlgorithmLab = CreatePrimaryButton(
+                "Algorithm Analysis  →",
+                175,
+                38
+            );
+
+            btnAlgorithmLab.Location = new Point(
+                page.ClientSize.Width - 207,
+                32
+            );
+
+            btnAlgorithmLab.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnAlgorithmLab.Click += (s, e) =>
+            {
+                ShowAlgorithmAnalysis();
+            };
+
+            page.Controls.Add(btnAlgorithmLab);
+
 
             // =========================
             // LOAD DATABASE DATA
             // =========================
 
-            IssueService issueService = new IssueService();
+            issueAlgorithmService.RefreshIssueStructures();
 
-            List<Issue> issues = issueService.GetAllIssues();
+            List<Issue> issues =
+                issueAlgorithmService.GetIssuesSortedById();
 
             int totalRequests = issues.Count;
 
@@ -1435,6 +1465,17 @@ namespace MunicipalityServiceApp2
 
         private void ShowRequestDetails(Issue issue)
         {
+            // Retrieve the latest request using the AVL Tree
+            issueAlgorithmService.RefreshIssueStructures();
+
+            Issue storedIssue =
+                issueAlgorithmService.FindIssueById(issue.Id);
+
+            if (storedIssue != null)
+            {
+                issue = storedIssue;
+            }
+
             ClearContent();
 
             Panel page = CreatePage();
@@ -1974,9 +2015,10 @@ namespace MunicipalityServiceApp2
             // LOAD DATA
             // =========================
 
-            IssueService issueService = new IssueService();
+            issueAlgorithmService.RefreshIssueStructures();
 
-            List<Issue> issues = issueService.GetAllIssues();
+            List<Issue> issues =
+                issueAlgorithmService.GetIssuesByPriority();
 
 
             // =========================
@@ -2385,6 +2427,17 @@ namespace MunicipalityServiceApp2
         // =========================================================
         private void ShowManageRequestDetails(Issue issue)
         {
+            // Refresh and retrieve the request using the Red-Black Tree
+            issueAlgorithmService.RefreshIssueStructures();
+
+            Issue storedIssue =
+                issueAlgorithmService.FindIssueUsingRedBlackTree(issue.Id);
+
+            if (storedIssue != null)
+            {
+                issue = storedIssue;
+            }
+
             ClearContent();
 
             Panel page = CreatePage();
@@ -2778,6 +2831,7 @@ namespace MunicipalityServiceApp2
                         return;
                     }
 
+                    issueAlgorithmService.RefreshIssueStructures();
 
                     MessageBox.Show(
                         $"Request #{issue.Id} has been updated to {newStatus}.",
@@ -2814,6 +2868,578 @@ namespace MunicipalityServiceApp2
             updateCard.Controls.Add(
                 btnUpdate
             );
+        }
+
+        // =========================================================
+        // SHOW AlGORITHM ANALYSIS
+        // =========================================================
+
+        private void ShowAlgorithmAnalysis()
+        {
+            ClearContent();
+
+            issueAlgorithmService.RefreshIssueStructures();
+
+            // Add existing issue locations as graph vertices.
+            IssueService issueService = new IssueService();
+
+            foreach (Issue issue in issueService.GetAllIssues())
+            {
+                issueAlgorithmService.MunicipalGraph.AddVertex(
+                    issue.Location
+                );
+            }
+
+            Panel page = CreatePage();
+
+            page.AutoScroll = true;
+            page.Dock = DockStyle.Fill;
+
+            pnlContent.Controls.Add(page);
+
+            // =========================
+            // HEADER
+            // =========================
+
+            Button btnBack = new Button
+            {
+                Text = "←  Back to My Requests",
+                AutoSize = true,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.Transparent,
+                ForeColor = activeColor,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Location = new Point(32, 18),
+                Cursor = Cursors.Hand
+            };
+
+            btnBack.FlatAppearance.BorderSize = 0;
+
+            btnBack.Click += (s, e) =>
+            {
+                SetActiveButton(btnRequests);
+                ShowRequests();
+            };
+
+            page.Controls.Add(btnBack);
+
+            Label title = CreateTitle("Algorithm Analysis");
+            title.Location = new Point(32, 58);
+            page.Controls.Add(title);
+
+            Label subtitle = CreateSubtitle(
+                "Explore the data structures used to organise municipal service requests."
+            );
+
+            subtitle.Location = new Point(34, 98);
+            page.Controls.Add(subtitle);
+
+
+            // =========================
+            // TREE ANALYSIS CARD
+            // =========================
+
+            Panel treeCard = CreateCard(
+                32,
+                140,
+                page.ClientSize.Width - 64,
+                310
+            );
+
+            treeCard.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Left |
+                AnchorStyles.Right;
+
+            page.Controls.Add(treeCard);
+
+            Label treeTitle = CreateCardTitle(
+                "Tree Structures"
+            );
+
+            treeTitle.Location = new Point(24, 18);
+            treeCard.Controls.Add(treeTitle);
+
+            Label treeSubtitle = CreateSmallText(
+                "Traversal and search structures built from submitted requests."
+            );
+
+            treeSubtitle.Location = new Point(25, 45);
+            treeCard.Controls.Add(treeSubtitle);
+
+
+            // BINARY TREE
+
+            Label binaryLabel = CreateFieldLabel(
+                "BINARY TREE"
+            );
+
+            binaryLabel.Location = new Point(25, 85);
+            treeCard.Controls.Add(binaryLabel);
+
+            Label binaryValue = CreateSmallText(
+                "Pre-order: " +
+                string.Join(", ",
+                    issueAlgorithmService.BinaryTree.PreOrder()
+                        .Select(i => "#" + i.Id)) +
+
+                "\nIn-order: " +
+                string.Join(", ",
+                    issueAlgorithmService.BinaryTree.InOrder()
+                        .Select(i => "#" + i.Id)) +
+
+                "\nPost-order: " +
+                string.Join(", ",
+                    issueAlgorithmService.BinaryTree.PostOrder()
+                        .Select(i => "#" + i.Id))
+            );
+
+            binaryValue.Location = new Point(25, 108);
+            binaryValue.Size = new Size(treeCard.Width - 50, 65);
+            binaryValue.AutoSize = false;
+            treeCard.Controls.Add(binaryValue);
+
+
+            // BINARY SEARCH TREE
+
+            Label bstLabel = CreateFieldLabel(
+                "BINARY SEARCH TREE"
+            );
+
+            bstLabel.Location = new Point(25, 185);
+            treeCard.Controls.Add(bstLabel);
+
+            Label bstValue = CreateSmallText(
+                "Requests sorted by ID: " +
+                string.Join(", ",
+                    issueAlgorithmService.BinarySearchTree.InOrder()
+                        .Select(i => "#" + i.Id))
+            );
+
+            bstValue.Location = new Point(25, 208);
+            bstValue.Size = new Size(treeCard.Width - 50, 25);
+            bstValue.AutoSize = false;
+            treeCard.Controls.Add(bstValue);
+
+
+            // AVL TREE
+
+            Label avlLabel = CreateFieldLabel(
+                "AVL TREE"
+            );
+
+            avlLabel.Location = new Point(25, 242);
+            treeCard.Controls.Add(avlLabel);
+
+            Label avlValue = CreateSmallText(
+                "Balanced tree contains " +
+                issueAlgorithmService.AVLTree.InOrder().Count +
+                " requests. Search is available by request ID."
+            );
+
+            avlValue.Location = new Point(25, 265);
+            treeCard.Controls.Add(avlValue);
+
+
+            // =========================
+            // RED-BLACK TREE AND HEAP
+            // =========================
+
+            Panel advancedTreeCard = CreateCard(
+                32,
+                465,
+                page.ClientSize.Width - 64,
+                155
+            );
+
+            advancedTreeCard.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Left |
+                AnchorStyles.Right;
+
+            page.Controls.Add(advancedTreeCard);
+
+            Label advancedTitle = CreateCardTitle(
+                "Advanced Search and Priority"
+            );
+
+            advancedTitle.Location = new Point(24, 18);
+            advancedTreeCard.Controls.Add(advancedTitle);
+
+
+            Label redBlackLabel = CreateFieldLabel(
+                "RED-BLACK TREE"
+            );
+
+            redBlackLabel.Location = new Point(25, 58);
+            advancedTreeCard.Controls.Add(redBlackLabel);
+
+            Label redBlackValue = CreateSmallText(
+                "Indexed requests: " +
+                issueAlgorithmService.RedBlackTree.InOrder().Count
+            );
+
+            redBlackValue.Location = new Point(25, 81);
+            advancedTreeCard.Controls.Add(redBlackValue);
+
+
+            Label heapLabel = CreateFieldLabel(
+                "MIN HEAP – PRIORITY ORDER"
+            );
+
+            heapLabel.Location = new Point(25, 108);
+            advancedTreeCard.Controls.Add(heapLabel);
+
+            List<Issue> priorityIssues =
+                issueAlgorithmService.GetIssuesByPriority();
+
+            Label heapValue = CreateSmallText(
+                priorityIssues.Count == 0
+                    ? "No requests available."
+                    : string.Join(" → ",
+                        priorityIssues.Select(i =>
+                            "#" + i.Id + " (" + i.Status + ")"))
+            );
+
+            heapValue.Location = new Point(220, 108);
+            heapValue.Size = new Size(
+                advancedTreeCard.Width - 245,
+                25
+            );
+
+            heapValue.AutoSize = false;
+            advancedTreeCard.Controls.Add(heapValue);
+
+
+            // =========================
+            // GRAPH ANALYSIS CARD
+            // =========================
+
+            Panel graphCard = CreateCard(
+                32,
+                635,
+                page.ClientSize.Width - 64,
+                365
+            );
+
+            graphCard.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Left |
+                AnchorStyles.Right;
+
+            page.Controls.Add(graphCard);
+
+            Label graphTitle = CreateCardTitle(
+                "Municipal Location Network"
+            );
+
+            graphTitle.Location = new Point(24, 18);
+            graphCard.Controls.Add(graphTitle);
+
+            Label graphSubtitle = CreateSmallText(
+                "Connect locations, explore routes and calculate a minimum spanning network."
+            );
+
+            graphSubtitle.Location = new Point(25, 45);
+            graphCard.Controls.Add(graphSubtitle);
+
+
+            // SOURCE LOCATION
+
+            Label sourceLabel = CreateFieldLabel(
+                "SOURCE"
+            );
+
+            sourceLabel.Location = new Point(25, 85);
+            graphCard.Controls.Add(sourceLabel);
+
+            TextBox txtSource = CreateTextBox("");
+            txtSource.Location = new Point(25, 108);
+            txtSource.Width = 190;
+            graphCard.Controls.Add(txtSource);
+
+
+            // DESTINATION LOCATION
+
+            Label destinationLabel = CreateFieldLabel(
+                "DESTINATION"
+            );
+
+            destinationLabel.Location = new Point(235, 85);
+            graphCard.Controls.Add(destinationLabel);
+
+            TextBox txtDestination = CreateTextBox("");
+            txtDestination.Location = new Point(235, 108);
+            txtDestination.Width = 190;
+            graphCard.Controls.Add(txtDestination);
+
+
+            // CONNECTION WEIGHT
+
+            Label weightLabel = CreateFieldLabel(
+                "WEIGHT"
+            );
+
+            weightLabel.Location = new Point(445, 85);
+            graphCard.Controls.Add(weightLabel);
+
+            NumericUpDown numWeight = new NumericUpDown
+            {
+                Location = new Point(445, 108),
+                Width = 90,
+                Minimum = 1,
+                Maximum = 100000,
+                Value = 1,
+                Font = new Font("Segoe UI", 9.5F)
+            };
+
+            graphCard.Controls.Add(numWeight);
+
+
+            // ADD CONNECTION
+
+            Button btnAddConnection = CreatePrimaryButton(
+                "Add Connection",
+                150,
+                36
+            );
+
+            btnAddConnection.Location = new Point(25, 155);
+
+            // GRAPH RESULTS
+
+            Label lblGraphResults = CreateSmallText(
+                "Add connections to begin analysing the network."
+            );
+
+            lblGraphResults.Location = new Point(25, 285);
+            lblGraphResults.Size = new Size(
+                graphCard.Width - 50,
+                65
+            );
+
+            lblGraphResults.AutoSize = false;
+            graphCard.Controls.Add(lblGraphResults);
+
+            btnAddConnection.Click += (s, e) =>
+            {
+                string source = txtSource.Text.Trim();
+                string destination = txtDestination.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(source) ||
+                    string.IsNullOrWhiteSpace(destination))
+                {
+                    MessageBox.Show(
+                        "Enter both a source and destination location.",
+                        "Missing Locations",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
+
+                    return;
+                }
+
+                if (source.Equals(
+                    destination,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show(
+                        "Source and destination must be different.",
+                        "Invalid Connection",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
+
+                    return;
+                }
+
+                try
+                {
+                    issueAlgorithmService.AddMunicipalConnection(
+                        source,
+                        destination,
+                        (double)numWeight.Value
+                    );
+
+                    MessageBox.Show(
+                        "Location connection added successfully.",
+                        "Connection Added",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+
+                    txtSource.Clear();
+                    txtDestination.Clear();
+
+                    lblGraphResults.Text =
+                        "Connection added. Run BFS, DFS or MST to analyse the network.";
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        "Unable to add the connection.\n\n" + ex.Message,
+                        "Graph Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
+            };
+
+            graphCard.Controls.Add(btnAddConnection);
+
+
+            // GRAPH TRAVERSAL START LOCATION
+
+            Label startLabel = CreateFieldLabel(
+                "START LOCATION"
+            );
+
+            startLabel.Location = new Point(25, 210);
+            graphCard.Controls.Add(startLabel);
+
+            ComboBox cmbStart = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDown,
+                Font = new Font("Segoe UI", 9.5F),
+                Location = new Point(25, 233),
+                Width = 190
+            };
+
+            foreach (string vertex in
+                issueAlgorithmService.MunicipalGraph.GetVertices())
+            {
+                cmbStart.Items.Add(vertex);
+            }
+
+            graphCard.Controls.Add(cmbStart);
+
+
+            // BFS
+
+            Button btnBFS = CreatePrimaryButton(
+                "Run BFS",
+                100,
+                36
+            );
+
+            btnBFS.Location = new Point(235, 230);
+
+            btnBFS.Click += (s, e) =>
+            {
+                string start = cmbStart.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(start))
+                {
+                    MessageBox.Show(
+                        "Enter or select a starting location.",
+                        "Missing Location",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
+
+                    return;
+                }
+
+                try
+                {
+                    List<string> result =
+                        issueAlgorithmService.ExploreLocationsBFS(start);
+
+                    lblGraphResults.Text =
+                        "Breadth-First Search (BFS):\n" +
+                        string.Join(" → ", result);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "BFS Error");
+                }
+            };
+
+            graphCard.Controls.Add(btnBFS);
+
+
+            // DFS
+
+            Button btnDFS = CreatePrimaryButton(
+                "Run DFS",
+                100,
+                36
+            );
+
+            btnDFS.Location = new Point(345, 230);
+
+            btnDFS.Click += (s, e) =>
+            {
+                string start = cmbStart.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(start))
+                {
+                    MessageBox.Show(
+                        "Enter or select a starting location.",
+                        "Missing Location",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
+
+                    return;
+                }
+
+                try
+                {
+                    List<string> result =
+                        issueAlgorithmService.ExploreLocationsDFS(start);
+
+                    lblGraphResults.Text =
+                        "Depth-First Search (DFS):\n" +
+                        string.Join(" → ", result);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "DFS Error");
+                }
+            };
+
+            graphCard.Controls.Add(btnDFS);
+
+
+            // MINIMUM SPANNING TREE
+
+            Button btnMST = CreatePrimaryButton(
+                "Calculate MST",
+                145,
+                36
+            );
+
+            btnMST.Location = new Point(455, 230);
+
+            btnMST.Click += (s, e) =>
+            {
+                try
+                {
+                    List<GraphEdge> edges =
+                        issueAlgorithmService.GetMinimumSpanningTree();
+
+                    if (edges.Count == 0)
+                    {
+                        lblGraphResults.Text =
+                            "No connections available. Add at least one connection first.";
+
+                        return;
+                    }
+
+                    lblGraphResults.Text =
+                        "Kruskal Minimum Spanning Tree / Forest:\n" +
+                        string.Join(" | ", edges.Select(edge => edge.ToString())) +
+                        "\nTotal network weight: " +
+                        issueAlgorithmService.GetMinimumNetworkWeight();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "MST Error");
+                }
+            };
+
+            graphCard.Controls.Add(btnMST);
         }
 
         // =========================================================

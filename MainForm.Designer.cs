@@ -142,7 +142,7 @@
             this.btnSettings.Name = "btnSettings";
             this.btnSettings.Size = new System.Drawing.Size(120, 65);
             this.btnSettings.TabIndex = 4;
-            this.btnSettings.Text = "Settings";
+            this.btnSettings.Text = "Manage Requests";
             this.btnSettings.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
             this.btnSettings.UseVisualStyleBackColor = true;
             // 
