@@ -3111,6 +3111,7 @@ namespace MunicipalityServiceApp2
             advancedTreeCard.Controls.Add(heapValue);
 
 
+
             // =========================
             // GRAPH ANALYSIS CARD
             // =========================
@@ -3119,7 +3120,7 @@ namespace MunicipalityServiceApp2
                 32,
                 635,
                 page.ClientSize.Width - 64,
-                365
+                850
             );
 
             graphCard.Anchor =
@@ -3129,6 +3130,10 @@ namespace MunicipalityServiceApp2
 
             page.Controls.Add(graphCard);
 
+            // =========================
+            // HEADER
+            // =========================
+
             Label graphTitle = CreateCardTitle(
                 "Municipal Location Network"
             );
@@ -3137,19 +3142,17 @@ namespace MunicipalityServiceApp2
             graphCard.Controls.Add(graphTitle);
 
             Label graphSubtitle = CreateSmallText(
-                "Connect locations, explore routes and calculate a minimum spanning network."
+                "Connect locations, visualise the network, explore routes and calculate the minimum spanning tree."
             );
 
             graphSubtitle.Location = new Point(25, 45);
             graphCard.Controls.Add(graphSubtitle);
 
+            // =========================
+            // CONNECTION INPUTS
+            // =========================
 
-            // SOURCE LOCATION
-
-            Label sourceLabel = CreateFieldLabel(
-                "SOURCE"
-            );
-
+            Label sourceLabel = CreateFieldLabel("SOURCE");
             sourceLabel.Location = new Point(25, 85);
             graphCard.Controls.Add(sourceLabel);
 
@@ -3158,13 +3161,7 @@ namespace MunicipalityServiceApp2
             txtSource.Width = 190;
             graphCard.Controls.Add(txtSource);
 
-
-            // DESTINATION LOCATION
-
-            Label destinationLabel = CreateFieldLabel(
-                "DESTINATION"
-            );
-
+            Label destinationLabel = CreateFieldLabel("DESTINATION");
             destinationLabel.Location = new Point(235, 85);
             graphCard.Controls.Add(destinationLabel);
 
@@ -3173,13 +3170,7 @@ namespace MunicipalityServiceApp2
             txtDestination.Width = 190;
             graphCard.Controls.Add(txtDestination);
 
-
-            // CONNECTION WEIGHT
-
-            Label weightLabel = CreateFieldLabel(
-                "WEIGHT"
-            );
-
+            Label weightLabel = CreateFieldLabel("WEIGHT");
             weightLabel.Location = new Point(445, 85);
             graphCard.Controls.Add(weightLabel);
 
@@ -3195,8 +3186,9 @@ namespace MunicipalityServiceApp2
 
             graphCard.Controls.Add(numWeight);
 
-
+            // =========================
             // ADD CONNECTION
+            // =========================
 
             Button btnAddConnection = CreatePrimaryButton(
                 "Add Connection",
@@ -3205,21 +3197,278 @@ namespace MunicipalityServiceApp2
             );
 
             btnAddConnection.Location = new Point(25, 155);
+            graphCard.Controls.Add(btnAddConnection);
 
+            // =========================
+            // CONNECTION LIST
+            // =========================
+
+            Label connectionsTitle = CreateCardTitle(
+                "Added Connections"
+            );
+
+            connectionsTitle.Location = new Point(25, 205);
+            graphCard.Controls.Add(connectionsTitle);
+
+            ListBox lstConnections = new ListBox
+            {
+                Location = new Point(25, 232),
+                Size = new Size(510, 90),
+                Font = new Font("Segoe UI", 9F),
+                BorderStyle = BorderStyle.FixedSingle,
+                IntegralHeight = false
+            };
+
+            graphCard.Controls.Add(lstConnections);
+
+            // =========================
+            // GRAPH VISUALISATION
+            // =========================
+
+            Label visualTitle = CreateCardTitle(
+                "Network Visualisation"
+            );
+
+            visualTitle.Location = new Point(25, 340);
+            graphCard.Controls.Add(visualTitle);
+
+            Panel graphCanvas = new Panel
+            {
+                Location = new Point(25, 368),
+                Size = new Size(510, 220),
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            graphCard.Controls.Add(graphCanvas);
+
+            // =========================
+            // GRAPH DRAWING
+            // =========================
+
+            graphCanvas.Paint += (s, e) =>
+            {
+                Graphics graphics = e.Graphics;
+
+                graphics.SmoothingMode =
+                    System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+                List<string> vertices =
+                    issueAlgorithmService.MunicipalGraph.GetVertices();
+
+                List<GraphEdge> edges =
+                    issueAlgorithmService.MunicipalGraph.GetAllEdges();
+
+                if (vertices.Count == 0)
+                {
+                    graphics.DrawString(
+                        "Add connections to visualise the municipal network.",
+                        new Font("Segoe UI", 9F),
+                        Brushes.Gray,
+                        new PointF(15, 20)
+                    );
+
+                    return;
+                }
+
+                Dictionary<string, PointF> positions =
+                    new Dictionary<string, PointF>(
+                        StringComparer.OrdinalIgnoreCase
+                    );
+
+                float centerX = graphCanvas.ClientSize.Width / 2f;
+                float centerY = graphCanvas.ClientSize.Height / 2f;
+
+                float radius = Math.Max(
+                    0,
+                    Math.Min(
+                        graphCanvas.ClientSize.Width,
+                        graphCanvas.ClientSize.Height
+                    ) * 0.34f
+                );
+
+                // Calculate node positions around a circle.
+
+                for (int i = 0; i < vertices.Count; i++)
+                {
+                    double angle =
+                        (-Math.PI / 2) +
+                        (2 * Math.PI * i / vertices.Count);
+
+                    float x = centerX +
+                        (float)(radius * Math.Cos(angle));
+
+                    float y = centerY +
+                        (float)(radius * Math.Sin(angle));
+
+                    positions[vertices[i]] = new PointF(x, y);
+                }
+
+                using (Pen edgePen = new Pen(
+                    Color.FromArgb(100, 116, 139), 2))
+                using (Font weightFont = new Font(
+                    "Segoe UI", 8F, FontStyle.Bold))
+                using (Font nodeFont = new Font(
+                    "Segoe UI", 7.5F, FontStyle.Bold))
+                using (StringFormat format = new StringFormat())
+                {
+                    format.Alignment = StringAlignment.Center;
+                    format.LineAlignment = StringAlignment.Center;
+
+                    // Draw edges and weights first.
+
+                    foreach (GraphEdge edge in edges)
+                    {
+                        if (!positions.ContainsKey(edge.Source) ||
+                            !positions.ContainsKey(edge.Destination))
+                        {
+                            continue;
+                        }
+
+                        PointF source = positions[edge.Source];
+                        PointF destination = positions[edge.Destination];
+
+                        graphics.DrawLine(
+                            edgePen,
+                            source,
+                            destination
+                        );
+
+                        float middleX =
+                            (source.X + destination.X) / 2f;
+
+                        float middleY =
+                            (source.Y + destination.Y) / 2f;
+
+                        string weight = edge.Weight.ToString("0.##");
+
+                        SizeF textSize = graphics.MeasureString(
+                            weight,
+                            weightFont
+                        );
+
+                        RectangleF weightBackground = new RectangleF(
+                            middleX - textSize.Width / 2 - 4,
+                            middleY - textSize.Height / 2 - 2,
+                            textSize.Width + 8,
+                            textSize.Height + 4
+                        );
+
+                        graphics.FillRectangle(
+                            Brushes.White,
+                            weightBackground
+                        );
+
+                        graphics.DrawString(
+                            weight,
+                            weightFont,
+                            Brushes.DarkSlateGray,
+                            weightBackground,
+                            format
+                        );
+                    }
+
+                    // Draw location nodes.
+
+                    foreach (string vertex in vertices)
+                    {
+                        PointF position = positions[vertex];
+
+                        RectangleF node = new RectangleF(
+                            position.X - 46,
+                            position.Y - 20,
+                            92,
+                            40
+                        );
+
+                        graphics.FillEllipse(
+                            Brushes.RoyalBlue,
+                            node
+                        );
+
+                        graphics.DrawEllipse(
+                            Pens.DarkBlue,
+                            node
+                        );
+
+                        graphics.DrawString(
+                            vertex,
+                            nodeFont,
+                            Brushes.White,
+                            node,
+                            format
+                        );
+                    }
+                }
+            };
+
+            // =========================
+            // REFRESH GRAPH DISPLAY
+            // =========================
+
+            Action refreshGraph = () =>
+            {
+                lstConnections.Items.Clear();
+
+                List<GraphEdge> edges =
+                    issueAlgorithmService.MunicipalGraph.GetAllEdges();
+
+                foreach (GraphEdge edge in edges)
+                {
+                    lstConnections.Items.Add(
+                        edge.Source + "  ↔  " +
+                        edge.Destination + "  |  Weight: " +
+                        edge.Weight.ToString("0.##")
+                    );
+                }
+
+                graphCanvas.Invalidate();
+            };
+
+            // =========================
             // GRAPH RESULTS
+            // =========================
 
             Label lblGraphResults = CreateSmallText(
                 "Add connections to begin analysing the network."
             );
 
-            lblGraphResults.Location = new Point(25, 285);
-            lblGraphResults.Size = new Size(
-                graphCard.Width - 50,
-                65
+            lblGraphResults.Location = new Point(25, 690);
+            lblGraphResults.Size = new Size(510, 85);
+            lblGraphResults.AutoSize = false;
+
+            graphCard.Controls.Add(lblGraphResults);
+
+            // =========================
+            // TRAVERSAL START LOCATION
+            // =========================
+
+            Label startLabel = CreateFieldLabel(
+                "START LOCATION"
             );
 
-            lblGraphResults.AutoSize = false;
-            graphCard.Controls.Add(lblGraphResults);
+            startLabel.Location = new Point(25, 610);
+            graphCard.Controls.Add(startLabel);
+
+            ComboBox cmbStart = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDown,
+                Font = new Font("Segoe UI", 9.5F),
+                Location = new Point(25, 633),
+                Width = 190
+            };
+
+            foreach (string vertex in
+                issueAlgorithmService.MunicipalGraph.GetVertices())
+            {
+                cmbStart.Items.Add(vertex);
+            }
+
+            graphCard.Controls.Add(cmbStart);
+
+            // =========================
+            // ADD CONNECTION CLICK
+            // =========================
 
             btnAddConnection.Click += (s, e) =>
             {
@@ -3261,18 +3510,24 @@ namespace MunicipalityServiceApp2
                         (double)numWeight.Value
                     );
 
-                    MessageBox.Show(
-                        "Location connection added successfully.",
-                        "Connection Added",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    refreshGraph();
+
+                    cmbStart.Items.Clear();
+
+                    foreach (string vertex in
+                        issueAlgorithmService.MunicipalGraph.GetVertices())
+                    {
+                        cmbStart.Items.Add(vertex);
+                    }
+
+                    cmbStart.Text = source;
 
                     txtSource.Clear();
                     txtDestination.Clear();
 
                     lblGraphResults.Text =
-                        "Connection added. Run BFS, DFS or MST to analyse the network.";
+                        "Connection added successfully. The network has been updated.";
+
                 }
                 catch (Exception ex)
                 {
@@ -3285,36 +3540,10 @@ namespace MunicipalityServiceApp2
                 }
             };
 
-            graphCard.Controls.Add(btnAddConnection);
 
-
-            // GRAPH TRAVERSAL START LOCATION
-
-            Label startLabel = CreateFieldLabel(
-                "START LOCATION"
-            );
-
-            startLabel.Location = new Point(25, 210);
-            graphCard.Controls.Add(startLabel);
-
-            ComboBox cmbStart = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDown,
-                Font = new Font("Segoe UI", 9.5F),
-                Location = new Point(25, 233),
-                Width = 190
-            };
-
-            foreach (string vertex in
-                issueAlgorithmService.MunicipalGraph.GetVertices())
-            {
-                cmbStart.Items.Add(vertex);
-            }
-
-            graphCard.Controls.Add(cmbStart);
-
-
+            // =========================
             // BFS
+            // =========================
 
             Button btnBFS = CreatePrimaryButton(
                 "Run BFS",
@@ -3322,7 +3551,7 @@ namespace MunicipalityServiceApp2
                 36
             );
 
-            btnBFS.Location = new Point(235, 230);
+            btnBFS.Location = new Point(235, 630);
 
             btnBFS.Click += (s, e) =>
             {
@@ -3357,8 +3586,9 @@ namespace MunicipalityServiceApp2
 
             graphCard.Controls.Add(btnBFS);
 
-
+            // =========================
             // DFS
+            // =========================
 
             Button btnDFS = CreatePrimaryButton(
                 "Run DFS",
@@ -3366,7 +3596,7 @@ namespace MunicipalityServiceApp2
                 36
             );
 
-            btnDFS.Location = new Point(345, 230);
+            btnDFS.Location = new Point(345, 630);
 
             btnDFS.Click += (s, e) =>
             {
@@ -3401,8 +3631,9 @@ namespace MunicipalityServiceApp2
 
             graphCard.Controls.Add(btnDFS);
 
-
+            // =========================
             // MINIMUM SPANNING TREE
+            // =========================
 
             Button btnMST = CreatePrimaryButton(
                 "Calculate MST",
@@ -3410,7 +3641,7 @@ namespace MunicipalityServiceApp2
                 36
             );
 
-            btnMST.Location = new Point(455, 230);
+            btnMST.Location = new Point(455, 630);
 
             btnMST.Click += (s, e) =>
             {
@@ -3429,7 +3660,10 @@ namespace MunicipalityServiceApp2
 
                     lblGraphResults.Text =
                         "Kruskal Minimum Spanning Tree / Forest:\n" +
-                        string.Join(" | ", edges.Select(edge => edge.ToString())) +
+                        string.Join(
+                            " | ",
+                            edges.Select(edge => edge.ToString())
+                        ) +
                         "\nTotal network weight: " +
                         issueAlgorithmService.GetMinimumNetworkWeight();
                 }
@@ -3440,6 +3674,10 @@ namespace MunicipalityServiceApp2
             };
 
             graphCard.Controls.Add(btnMST);
+
+            // Initial graph display.
+            refreshGraph();
+
         }
 
         // =========================================================
